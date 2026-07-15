@@ -57,6 +57,7 @@ export function FloatingSupportButton() {
       
       let pageX, pageY;
       if (e instanceof TouchEvent) {
+          if (e.cancelable) e.preventDefault();
           pageX = e.touches[0].pageX;
           pageY = e.touches[0].pageY;
       } else {
@@ -106,7 +107,7 @@ export function FloatingSupportButton() {
         touchAction: 'none'
       }}
       className={cn(
-        "fixed z-[100] cursor-grab active:cursor-grabbing select-none transition-all duration-300",
+        "fixed z-[100] cursor-grab active:cursor-grabbing select-none transition duration-300",
         isDragging ? "opacity-100 scale-110" : "opacity-50 hover:opacity-100"
       )}
     >

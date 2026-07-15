@@ -36,7 +36,7 @@ export const Logo = ({ className, showText = true, size = 45, isPremium = false 
         />
       </div>
       {showText && (
-        <div className="flex flex-col">
+        <div className="hidden sm:flex flex-col">
           <h1 className="text-base md:text-xl font-black font-headline tracking-tighter leading-tight italic">
             <span className="text-white">ESTRATÉGIA</span>
             <span className={cn(

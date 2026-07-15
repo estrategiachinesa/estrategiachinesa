@@ -14,7 +14,7 @@ import { useFirebase, useAppConfig, setDocumentNonBlocking } from '@/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { doc, serverTimestamp } from 'firebase/firestore';
+import { doc, serverTimestamp, collection } from 'firebase/firestore';
 import { Logo } from '@/components/logo';
 
 type RegistrationStep = 'codeValidation' | 'terms' | 'form';
@@ -121,6 +121,19 @@ export default function RegisterPage() {
         };
 
         setDocumentNonBlocking(userDocRef, userProfileData, { merge: true });
+
+        // Log LGPD registration consent
+        const consentLogDocRef = doc(collection(firestore, 'consentLogs'));
+        const consentLogData = {
+            userId: userCredential.user.uid,
+            email: userCredential.user.email,
+            type: 'REGISTRATION_TERMS_AND_PRIVACY',
+            version: '1.0',
+            timestamp: serverTimestamp(),
+            accepted: true,
+            userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'unknown',
+        };
+        setDocumentNonBlocking(consentLogDocRef, consentLogData);
 
         localStorage.setItem('loginTimestamp', Date.now().toString());
         localStorage.setItem('showPremiumUpgradeOnLoad', 'true');

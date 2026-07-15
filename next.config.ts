@@ -9,7 +9,8 @@ const repo = process.env.GITHUB_REPOSITORY
 const nextConfig: NextConfig = {
   output: 'export',
   trailingSlash: true,
-  basePath: '',
+  basePath: isGithubActions ? `/${repo}` : '',
+  productionBrowserSourceMaps: false,
   images: {
     unoptimized: true,
     remotePatterns: [

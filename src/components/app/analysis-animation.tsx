@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useId } from 'react';
 import { cn } from '@/lib/utils';
 import { Cpu, Zap, Activity, ShieldCheck, Search, Database } from 'lucide-react';
-import CelestialOrbHero from '@/components/ui/quantum-grid-hero';
 
 const analysisSteps = [
   'INICIALIZANDO ANÁLISE...',
@@ -17,6 +16,10 @@ const analysisSteps = [
 export function AnalysisAnimation({ showProgressBar = true }: { showProgressBar?: boolean }) {
   const [currentText, setCurrentText] = useState(analysisSteps[0]);
   const [progress, setProgress] = useState(0);
+  const uniqueId = useId().replace(/:/g, '');
+  const geggaId = `gegga-${uniqueId}`;
+  const linearId = `linear-${uniqueId}`;
+  const gradientId = `gradient-${uniqueId}`;
 
   useEffect(() => {
     let textIndex = 0;
@@ -40,8 +43,92 @@ export function AnalysisAnimation({ showProgressBar = true }: { showProgressBar?
       <div className="absolute inset-0 grid-bg opacity-10 animate-pulse" />
       
       {/* Visual Core Analysis */}
-      <div className="relative flex items-center justify-center scale-110 md:scale-125 mb-4 w-48 h-48 rounded-full overflow-hidden border border-primary/25 bg-black/60 shadow-[0_0_50px_rgba(239,68,68,0.15)]">
-        <CelestialOrbHero />
+      <div className="relative flex items-center justify-center scale-110 md:scale-125 mb-4 w-48 h-48 rounded-full overflow-hidden bg-black/60 shadow-[0_0_50px_rgba(247,0,168,0.15)]">
+        <style>{`
+          .gegga {
+            width: 0;
+            height: 0;
+            position: absolute;
+          }
+
+          .snurra-${uniqueId} {
+            filter: url(#${geggaId});
+          }
+
+          .stopp1-${uniqueId} {
+            stop-color: #f700a8;
+          }
+
+          .stopp2-${uniqueId} {
+            stop-color: #ff8000;
+          }
+
+          .halvan-${uniqueId} {
+            animation: Snurra1-${uniqueId} 10s infinite linear;
+            stroke-dasharray: 180 800;
+            fill: none;
+            stroke: url(#${gradientId});
+            stroke-width: 23;
+            stroke-linecap: round;
+          }
+
+          .strecken-${uniqueId} {
+            animation: Snurra1-${uniqueId} 3s infinite linear;
+            stroke-dasharray: 26 54;
+            fill: none;
+            stroke: url(#${gradientId});
+            stroke-width: 23;
+            stroke-linecap: round;
+          }
+
+          .skugga-${uniqueId} {
+            filter: blur(5px);
+            opacity: 0.3;
+            position: absolute;
+            transform: translate(3px, 3px);
+          }
+
+          @keyframes Snurra1-${uniqueId} {
+            0% {
+              stroke-dashoffset: 0;
+            }
+
+            100% {
+              stroke-dashoffset: -403px;
+            }
+          }
+        `}</style>
+
+        <div className="relative flex items-center justify-center w-full h-full">
+          <svg className="gegga">
+            <defs>
+              <filter id={geggaId}>
+                <feGaussianBlur in="SourceGraphic" stdDeviation={7} result="blur" />
+                <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 20 -10" result="inreGegga" />
+                <feComposite in="SourceGraphic" in2="inreGegga" operator="atop" />
+              </filter>
+            </defs>
+          </svg>
+          
+          {/* Shadow layer */}
+          <svg className={`skugga-${uniqueId}`} width={160} height={160} viewBox="0 0 200 200">
+            <path className={`halvan-${uniqueId}`} d="m 164,100 c 0,-35.346224 -28.65378,-64 -64,-64 -35.346224,0 -64,28.653776 -64,64 0,35.34622 28.653776,64 64,64 35.34622,0 64,-26.21502 64,-64 0,-37.784981 -26.92058,-64 -64,-64 -37.079421,0 -65.267479,26.922736 -64,64 1.267479,37.07726 26.703171,65.05317 64,64 37.29683,-1.05317 64,-64 64,-64" />
+            <circle className={`strecken-${uniqueId}`} cx={100} cy={100} r={64} />
+          </svg>
+
+          {/* Active spinner layer */}
+          <svg className={`snurra-${uniqueId}`} width={160} height={160} viewBox="0 0 200 200">
+            <defs>
+              <linearGradient id={linearId}>
+                <stop className={`stopp1-${uniqueId}`} offset={0} />
+                <stop className={`stopp2-${uniqueId}`} offset={1} />
+              </linearGradient>
+              <linearGradient y2={160} x2={160} y1={40} x1={40} gradientUnits="userSpaceOnUse" id={gradientId} href={`#${linearId}`} xlinkHref={`#${linearId}`} />
+            </defs>
+            <path className={`halvan-${uniqueId}`} d="m 164,100 c 0,-35.346224 -28.65378,-64 -64,-64 -35.346224,0 -64,28.653776 -64,64 0,35.34622 28.653776,64 64,64 35.34622,0 64,-26.21502 64,-64 0,-37.784981 -26.92058,-64 -64,-64 -37.079421,0 -65.267479,26.922736 -64,64 1.267479,37.07726 26.703171,65.05317 64,64 37.29683,-1.05317 64,-64 64,-64" />
+            <circle className={`strecken-${uniqueId}`} cx={100} cy={100} r={64} />
+          </svg>
+        </div>
       </div>
 
       {/* Dynamic Analysis Text */}

@@ -17,7 +17,7 @@ import YoutubePlayer from '@/components/youtube-player';
 import { SignalForm } from '@/components/app/signal-form';
 import { SignalResult } from '@/components/app/signal-result';
 import { isMarketOpenForAsset } from '@/lib/market-hours';
-import { Loader2, AlertTriangle, BarChart, LogOut, ShieldAlert, Cpu } from 'lucide-react';
+import { Loader2, AlertTriangle, BarChart, LogOut, ShieldAlert, Cpu, ShieldCheck } from 'lucide-react';
 import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import { useAppConfig } from '@/firebase/config-provider';
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,9 @@ import { generateMockNewsEvents, isNewsCurrentlyActive } from '@/lib/news-events
 import { Logo } from '@/components/logo';
 import { OtcIntelligence } from '@/components/app/otc-intelligence';
 import CelestialOrbHero from '@/components/ui/quantum-grid-hero';
+import { SplineScene } from '@/components/ui/splite';
+import { PrivacySettingsModal } from '@/components/app/privacy-settings-modal';
+import { playSignalSound } from '@/lib/audio';
 
 export type FormData = {
   asset: Asset;
@@ -84,6 +87,7 @@ export default function AnalisadorPage() {
   const [accessState, setAccessState] = useState<AccessState>('checking');
   const [appState, setAppState] = useState<AppState>('idle');
   const [signalData, setSignalData] = useState<SignalData | null>(null);
+  const [lastStatus, setLastStatus] = useState<'pending' | 'active' | 'finished' | undefined>(undefined);
   const [showOTC, setShowOTC] = useState(false);
   const [isMarketOpen, setIsMarketOpen] = useState(true);
   const [hasReachedLimit, setHasReachedLimit] = useState(false);
@@ -92,6 +96,7 @@ export default function AnalisadorPage() {
   const [isStatusModalOpen, setStatusModalOpen] = useState(false);
   const [isUpgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [isNewsWarningModalOpen, setIsNewsWarningModalOpen] = useState(false);
+  const [isPrivacyModalOpen, setPrivacyModalOpen] = useState(false);
   
   const [hasAgreedToNewsWarning, setHasAgreedToNewsWarning] = useState(false);
   const [currentDateInfo, setCurrentDateInfo] = useState('');
@@ -263,6 +268,29 @@ export default function AnalisadorPage() {
     return () => clearInterval(timer);
   }, [appState, signalData?.operationStatus]);
 
+  useEffect(() => {
+    if (appState !== 'result' || !signalData) {
+      setLastStatus(undefined);
+      return;
+    }
+    
+    const currentStatus = signalData.operationStatus;
+    if (lastStatus !== undefined && currentStatus !== lastStatus) {
+      if (currentStatus === 'active') {
+        playSignalSound('active');
+      } else if (currentStatus === 'finished') {
+        playSignalSound('finished');
+      }
+    }
+    setLastStatus(currentStatus);
+  }, [signalData?.operationStatus, appState, lastStatus]);
+
+  useEffect(() => {
+    if (isNewsWarningModalOpen) {
+      playSignalSound('warning');
+    }
+  }, [isNewsWarningModalOpen]);
+
  const proceedWithAnalysis = async () => {
     setIsNewsWarningModalOpen(false);
 
@@ -395,10 +423,10 @@ export default function AnalisadorPage() {
              <Logo size={32} isPremium={isPremium} />
           </div>
 
-          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar max-w-[50%] md:max-w-none">
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar max-w-[70%] md:max-w-none">
             <nav className="flex items-center gap-1 bg-black/40 p-0.5 rounded-lg border border-white/5 shrink-0">
                {navigationItems.map((item) => (
-                  <Button key={item.id} asChild variant="ghost" size="sm" className={cn("h-6 md:h-9 px-2 md:px-4 rounded-md text-[0.6rem] md:text-[0.65rem] font-black uppercase tracking-widest transition-all", pathname === item.path ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary")}>
+                  <Button key={item.id} asChild variant="ghost" size="sm" className={cn("h-6 md:h-9 px-2 md:px-4 rounded-md text-[0.6rem] md:text-[0.65rem] font-black uppercase tracking-widest transition-all", pathname === item.path ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary")} onClick={() => playSignalSound('click')}>
                       <AffiliateLink href={item.path} className="flex items-center gap-1">
                           {item.label}
                           {item.id === 'sessaochinesa' && (
@@ -413,14 +441,32 @@ export default function AnalisadorPage() {
             </nav>
           </div>
           
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleLogout}
-            className="text-[0.6rem] font-black text-muted-foreground hover:text-destructive transition-all rounded-full px-2 border border-white/5 h-6 uppercase tracking-widest hidden md:flex"
-          >
-            <LogOut className="h-3 w-3 mr-1" /> Sair
-          </Button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                playSignalSound('click');
+                setPrivacyModalOpen(true);
+              }}
+              className="text-[0.6rem] font-black text-muted-foreground hover:text-primary transition-all rounded-full border border-white/5 w-6 h-6 p-0 flex items-center justify-center shrink-0"
+              title="Privacy"
+            >
+              <ShieldCheck className="h-3 w-3 text-primary" />
+              <span className="sr-only">Privacy</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                playSignalSound('click');
+                handleLogout();
+              }}
+              className="text-[0.6rem] font-black text-muted-foreground hover:text-destructive transition-all rounded-full px-2 border border-white/5 h-6 uppercase tracking-widest hidden md:flex"
+            >
+              <LogOut className="h-3 w-3 mr-1" /> Sair
+            </Button>
+          </div>
         </header>
 
         <main className="flex-grow overflow-hidden">
@@ -431,7 +477,7 @@ export default function AnalisadorPage() {
                         {appState === 'loading' ? (
                             <div className="w-full h-full flex items-center justify-center p-4"><AnalysisAnimation /></div>
                         ) : appState === 'result' && signalData ? (
-                            <div className="w-full h-full flex items-center justify-center p-4"><SignalResult data={signalData} onReset={() => setAppState('idle')} /></div>
+                            <div className="w-full h-full flex items-center justify-center p-4 overflow-y-auto no-scrollbar"><SignalResult data={signalData} onReset={() => setAppState('idle')} /></div>
                         ) : (
                             <div className="w-full h-full p-4 overflow-hidden">
                                 <SignalForm
@@ -459,12 +505,55 @@ export default function AnalisadorPage() {
 
                 <div className="flex-grow h-full relative overflow-hidden bg-black">
                     {isOtcAsset ? (
-                        <div className="w-full h-full flex items-center justify-center bg-black/20 p-6 relative overflow-hidden">
-                            <div className="absolute inset-0 z-0 flex items-center justify-center opacity-25">
+                        <div className="w-full h-full flex items-center justify-center bg-black/20 relative overflow-hidden">
+                            {/* Orbit effect (CelestialOrbHero) when analyzing, or SplineScene robot when idle/result */}
+                            {appState === 'loading' ? (
                                 <CelestialOrbHero />
-                            </div>
-                            <div className="text-center max-w-md relative z-10 flex flex-col items-center justify-center">
-                                <h3 className="text-lg font-black text-foreground uppercase tracking-widest">IA SCANNER: {currentAsset}</h3>
+                            ) : (
+                                <div className={cn(
+                                    "absolute inset-0 w-full h-full z-0 transition-all duration-1000 ease-in-out",
+                                    appState === 'result' && signalData ? (
+                                        signalData.signal.includes('CALL') 
+                                            ? "bg-green-500/5 shadow-[inset_0_0_80px_rgba(34,197,94,0.15)]" 
+                                            : "bg-red-500/5 shadow-[inset_0_0_80px_rgba(239,68,68,0.15)]"
+                                    ) : ""
+                                )}>
+                                    <SplineScene 
+                                        scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
+                                        className={cn(
+                                            "w-full h-full transition-all duration-1000 ease-in-out",
+                                            appState === 'result' && signalData ? (
+                                                signalData.signal.includes('CALL')
+                                                    ? "hue-rotate-[120deg] saturate-[1.8] brightness-[1.1] drop-shadow-[0_0_30px_rgba(34,197,94,0.35)]"
+                                                    : "hue-rotate-[-30deg] saturate-[2] brightness-[1.1] drop-shadow-[0_0_30px_rgba(239,68,68,0.35)]"
+                                            ) : ""
+                                        )}
+                                    />
+                                </div>
+                            )}
+                            
+                            <div className={cn(
+                                "text-center max-w-md relative z-10 flex flex-col items-center justify-center pointer-events-none select-none bg-black/60 p-6 rounded-3xl border backdrop-blur-md transition-all duration-1000",
+                                appState === 'result' && signalData ? (
+                                    signalData.signal.includes('CALL')
+                                        ? "border-green-500/30 shadow-[0_0_30px_rgba(34,197,94,0.15)]"
+                                        : "border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.15)]"
+                                ) : "border-white/10"
+                            )}>
+                                <h3 className="text-xl md:text-2xl font-black text-foreground uppercase tracking-widest text-center leading-tight">
+                                    IA SCANNER:
+                                    <br />
+                                    <span className={cn(
+                                        "text-sm md:text-base uppercase tracking-normal block mt-1 font-bold transition-all duration-1000",
+                                        appState === 'result' && signalData ? (
+                                            signalData.signal.includes('CALL')
+                                                ? "text-green-400 font-extrabold"
+                                                : "text-red-400 font-extrabold"
+                                        ) : "text-primary"
+                                    )}>
+                                        {currentAsset.toUpperCase().trim()}
+                                    </span>
+                                </h3>
                             </div>
                         </div>
                     ) : (
@@ -501,13 +590,6 @@ export default function AnalisadorPage() {
                                 <TradingViewWidget asset={currentAsset} interval={currentExpirationTime.replace('m', '')} />
                                 {appState === 'loading' && <BeamField />}
                             </div>
-                            {appState === 'loading' && (
-                                <div className="absolute inset-0 bg-black/40 z-30 flex flex-col items-center justify-center">
-                                    <div className="relative z-30 pointer-events-none scale-75">
-                                        <AnalysisAnimation showProgressBar={false} />
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     )}
                 </div>
@@ -520,7 +602,7 @@ export default function AnalisadorPage() {
                     {appState === 'loading' ? (
                         <div className="flex-grow flex items-center justify-center p-6"><AnalysisAnimation /></div>
                     ) : appState === 'result' && signalData ? (
-                        <div className="flex-grow flex flex-col items-center justify-start p-4 pt-2 animate-in fade-in duration-500 overflow-hidden">
+                        <div className="flex-grow flex flex-col items-center justify-center p-2.5 md:p-4 animate-in fade-in duration-500 overflow-y-auto no-scrollbar w-full">
                             <SignalResult data={signalData} onReset={() => setAppState('idle')} />
                         </div>
                     ) : (
@@ -552,6 +634,7 @@ export default function AnalisadorPage() {
 
       <VipUpgradeModal isOpen={isUpgradeModalOpen} onOpenChange={setUpgradeModalOpen} user={user} firestore={firestore} config={config} />
       <VipStatusModal isOpen={isStatusModalOpen} onOpenChange={setStatusModalOpen} vipStatus={(vipData as any)?.status} rejectedBrokerId={(vipData as any)?.brokerId} />
+      <PrivacySettingsModal isOpen={isPrivacyModalOpen} onOpenChange={setPrivacyModalOpen} userProfile={userProfile} vipData={vipData} />
 
       <Dialog open={isNewsWarningModalOpen} onOpenChange={setIsNewsWarningModalOpen}>
         <DialogContent className="max-w-lg bg-card/95 backdrop-blur-2xl border-white/10 rounded-3xl shadow-2xl">

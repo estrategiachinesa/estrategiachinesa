@@ -7,6 +7,7 @@ import { RefreshCw, CheckCircle2, Clock, Timer, Target, Zap, Activity } from 'lu
 import type { SignalData } from '@/app/analisador/page';
 import { CurrencyFlags } from './currency-flags';
 import { cn } from '@/lib/utils';
+import { playSignalSound } from '@/lib/audio';
 
 type SignalResultProps = {
   data: SignalData;
@@ -27,12 +28,15 @@ export function SignalResult({ data, onReset }: SignalResultProps) {
   const renderStatus = () => {
     if (data.operationStatus === 'pending' && data.countdown !== null && data.countdown > 0) {
       return (
-        <div className="flex flex-col items-center gap-0.5 md:gap-1 animate-pulse">
-            <span className="text-[0.45rem] md:text-[0.55rem] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-white/30">Aguardando Início</span>
-            <div className="flex items-center gap-1.5 md:gap-2 bg-yellow-500/10 px-3 md:px-4 py-0.5 md:py-1 rounded-full border border-yellow-500/20">
-                <Timer className="h-2.5 w-2.5 md:h-3 md:w-3 text-yellow-500" />
-                <span className="text-yellow-500 font-mono font-black text-base md:text-lg tracking-tighter">{formatTime(data.countdown)}</span>
-            </div>
+        <div className="flex flex-col items-center gap-1 animate-pulse">
+          <div className="flex items-center gap-1.5">
+            <span className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-amber-500 animate-ping" />
+            <span className="text-[0.55rem] md:text-[0.6rem] font-black uppercase tracking-[0.2em] text-amber-500/80">Sinal em Espera</span>
+          </div>
+          <div className="flex items-center gap-1.5 bg-amber-500/10 px-3 py-1 md:px-4 md:py-1.5 rounded-lg md:rounded-xl border border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.12)] backdrop-blur-md">
+            <Timer className="h-3 w-3 md:h-3.5 md:w-3.5 text-amber-500" />
+            <span className="text-amber-500 font-mono font-black text-sm md:text-lg tracking-tight">{formatTime(data.countdown)}</span>
+          </div>
         </div>
       );
     }
@@ -41,17 +45,30 @@ export function SignalResult({ data, onReset }: SignalResultProps) {
         const isBlinking = data.operationCountdown <= 3;
 
         return (
-          <div className="flex flex-col items-center gap-0.5 md:gap-1">
-            <span className="text-[0.45rem] md:text-[0.55rem] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-white/30">Operação em Curso</span>
-            <div className={cn(
-                "flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-0.5 md:py-1 rounded-full border transition-all duration-500",
-                isPurchaseTimeOver ? 'bg-red-500/10 border-red-500/20' : 'bg-blue-500/10 border-blue-500/20'
-            )}>
-              <Activity className={cn("h-2.5 w-2.5 md:h-3 md:w-3", isPurchaseTimeOver ? 'text-red-500' : 'text-blue-400')} />
+          <div className="flex flex-col items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <span className={cn(
-                "font-mono font-black text-base md:text-lg tracking-tighter",
-                isPurchaseTimeOver ? 'text-red-500' : 'text-blue-400',
-                isBlinking && 'animate-pulse'
+                "w-1 h-1 md:w-1.5 md:h-1.5 rounded-full animate-ping", 
+                isPurchaseTimeOver ? "bg-rose-500" : "bg-emerald-500"
+              )} />
+              <span className={cn(
+                "text-[0.55rem] md:text-[0.6rem] font-black uppercase tracking-[0.2em]",
+                isPurchaseTimeOver ? "text-rose-500/80" : "text-emerald-500/80"
+              )}>
+                {isPurchaseTimeOver ? "Janela Expirando" : "Sinal Ativo"}
+              </span>
+            </div>
+            <div className={cn(
+                "flex items-center gap-1.5 px-3 py-1 md:px-4 md:py-1.5 rounded-lg md:rounded-xl border transition-all duration-500 backdrop-blur-md shadow-lg",
+                isPurchaseTimeOver 
+                  ? 'bg-rose-500/10 border-rose-500/25 shadow-[0_0_15px_rgba(244,63,94,0.12)]' 
+                  : 'bg-emerald-500/10 border-emerald-500/25 shadow-[0_0_15px_rgba(16,185,129,0.12)]'
+            )}>
+              <Activity className={cn("h-3 w-3 md:h-3.5 md:w-3.5 animate-pulse", isPurchaseTimeOver ? 'text-rose-500' : 'text-emerald-400')} />
+              <span className={cn(
+                "font-mono font-black text-sm md:text-lg tracking-tight",
+                isPurchaseTimeOver ? 'text-rose-500' : 'text-emerald-400',
+                isBlinking && 'scale-105'
               )}>
                 {formatTime(data.operationCountdown)}
               </span>
@@ -61,114 +78,149 @@ export function SignalResult({ data, onReset }: SignalResultProps) {
     }
     if (data.operationStatus === 'finished') {
         return (
-            <div className="flex items-center justify-center gap-2 md:gap-3 bg-green-500/10 px-4 md:px-6 py-1.5 md:py-2 rounded-xl md:rounded-2xl border border-green-500/20 animate-in zoom-in-95 duration-700 shadow-2xl shadow-green-500/5">
-                <div className="bg-green-500 p-0.5 md:p-1 rounded-full">
-                    <CheckCircle2 className="h-3 w-3 md:h-4 md:w-4 text-black" />
+            <div className="flex items-center justify-center gap-2 bg-emerald-500/10 px-3.5 py-1.5 md:px-5 md:py-2.5 rounded-xl md:rounded-2xl border border-emerald-500/20 animate-in zoom-in-95 duration-700 shadow-lg shadow-emerald-500/5 backdrop-blur-md">
+                <div className="bg-emerald-500 p-0.5 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.3)]">
+                    <CheckCircle2 className="h-2.5 w-2.5 md:h-3 md:w-3 text-black stroke-[3]" />
                 </div>
-                <span className="text-xs md:text-sm font-black uppercase tracking-[0.1em] text-green-500">Operação Concluída</span>
+                <span className="text-[0.6rem] md:text-xs font-black uppercase tracking-[0.1em] text-emerald-400">Processo Finalizado</span>
             </div>
         );
     }
-     return <p className="text-[0.45rem] font-black uppercase opacity-20 tracking-widest">Sincronizando Engine...</p>;
+     return (
+       <div className="flex items-center gap-1.5 text-white/40 animate-pulse">
+         <RefreshCw className="h-2.5 w-2.5 md:h-3 md:w-3 animate-spin text-primary/60" />
+         <p className="text-[0.5rem] md:text-[0.55rem] font-black uppercase tracking-[0.15em]">Sincronizando Engine...</p>
+       </div>
+     );
   };
 
 
   return (
-    <div className="w-full max-w-sm space-y-3 md:space-y-6 text-center animate-in fade-in slide-in-from-bottom-4 duration-1000">
+    <div className="w-full max-w-[320px] md:max-w-sm space-y-1.5 md:space-y-4 text-center animate-in fade-in slide-in-from-bottom-4 duration-1000">
       <Card
         className={cn(
-          'border-white/10 bg-black/60 backdrop-blur-3xl rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden shadow-2xl relative group transition-all duration-700',
-          isActive && (isCall ? 'border-green-500/30 shadow-green-500/10' : 'border-red-500/30 shadow-red-500/10')
+          'border border-white/10 bg-black/80 backdrop-blur-3xl rounded-[1.2rem] md:rounded-[2rem] overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] relative group transition-all duration-700',
+          isActive && (isCall ? 'border-emerald-500/30 shadow-[0_0_40px_rgba(16,185,129,0.15)]' : 'border-rose-500/30 shadow-[0_0_40px_rgba(244,63,94,0.15)]')
         )}
       >
-        {/* Barra de Status Topo */}
+        {/* Decorator HUD Lines */}
+        <div className="absolute top-0 left-10 right-10 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        <div className="absolute bottom-0 left-10 right-10 h-[1px] bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+        
+        {/* Top Status Bar indicator */}
         <div className={cn(
-            "h-1 md:h-1.5 w-full transition-all duration-1000",
+            "h-1 w-full transition-all duration-1000 relative",
             isActive ? "animate-pulse" : "",
-            isCall ? "bg-green-500 shadow-[0_0_15px_rgba(34,197,94,0.5)]" : "bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]"
-        )} />
+            isCall 
+              ? "bg-gradient-to-r from-emerald-500/80 via-emerald-400 to-emerald-500/80 shadow-[0_1px_15px_rgba(16,185,129,0.5)]" 
+              : "bg-gradient-to-r from-rose-500/80 via-rose-400 to-rose-500/80 shadow-[0_1px_15px_rgba(244,63,94,0.5)]"
+        )}>
+          {/* Active light sweep */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-[shimmer_2.5s_infinite] pointer-events-none" />
+        </div>
 
-        <CardHeader className="pt-3 md:pt-6 pb-1 md:pb-2">
-          <CardTitle className="flex items-center justify-center gap-2">
-             <Zap className={cn("h-2.5 w-2.5 md:h-3 md:w-3", isCall ? "text-green-500" : "text-red-500")} />
-             <span className="text-[0.45rem] md:text-[0.6rem] font-black uppercase tracking-[0.3em] md:tracking-[0.5em] text-white/20">Protocolo de Elite</span>
+        <CardHeader className="pt-2 md:pt-5 pb-0.5 md:pb-1.5 relative z-10">
+          <CardTitle className="flex items-center justify-center gap-1.5">
+             <Zap className={cn("h-2.5 w-2.5 md:h-3 md:w-3 animate-pulse", isCall ? "text-emerald-400" : "text-rose-400")} />
+             <span className="text-[0.55rem] md:text-[0.65rem] font-black uppercase tracking-[0.3em] text-white/40">ANÁLISE PROTOCOLAR</span>
           </CardTitle>
         </CardHeader>
 
-        <CardContent className="space-y-3 md:space-y-6 px-4 md:px-8 pb-5 md:pb-8">
+        <CardContent className="space-y-2.5 md:space-y-5 px-3.5 md:px-8 pb-3.5 md:pb-6 relative z-10">
           
-          {/* Grid de Dados Técnicos */}
-          <div className="grid grid-cols-3 gap-1.5 md:gap-2">
-              <div className="flex flex-col items-center bg-white/[0.03] p-1.5 md:p-2.5 rounded-xl md:rounded-2xl border border-white/5 group-hover:bg-white/[0.06] transition-colors">
-                <span className="text-[0.4rem] md:text-[0.45rem] font-black text-white/20 uppercase tracking-widest mb-1 md:mb-1.5">Ativo</span>
-                <div className="flex items-center gap-1 md:gap-1.5">
-                    <CurrencyFlags asset={data.asset} />
-                    <span className="font-black text-[0.6rem] md:text-xs text-white uppercase tracking-tighter">{data.asset.replace(' (OTC)', '')}</span>
+          {/* Technical Info Grid */}
+          <div className="grid grid-cols-3 gap-1 md:gap-2">
+              {/* Asset Capsule */}
+              <div className="flex flex-col items-center justify-center bg-white/[0.06] py-1.5 px-1 md:p-3.5 rounded-lg md:rounded-2xl border border-white/10 hover:border-primary/30 hover:bg-white/[0.1] transition-all duration-300 shadow-sm">
+                <span className="text-[0.5rem] md:text-[0.6rem] font-bold text-zinc-400 uppercase tracking-widest mb-0.5 md:mb-1">Ativo</span>
+                <div className="flex flex-col items-center gap-0.5">
+                  <div className="flex items-center gap-1">
+                      <CurrencyFlags asset={data.asset} />
+                      <span className="font-extrabold text-[0.65rem] md:text-xs text-white uppercase tracking-tight">{data.asset.replace(' (OTC)', '')}</span>
+                  </div>
+                  {data.asset.includes('OTC') && (
+                    <span className="text-[0.45rem] font-black bg-amber-500/20 text-amber-400 px-1 py-0 px-1 rounded border border-amber-500/30 tracking-wider uppercase">OTC</span>
+                  )}
                 </div>
               </div>
-              <div className="flex flex-col items-center bg-white/[0.03] p-1.5 md:p-2.5 rounded-xl md:rounded-2xl border border-white/5 group-hover:bg-white/[0.06] transition-colors">
-                <span className="text-[0.4rem] md:text-[0.45rem] font-black text-white/20 uppercase tracking-widest mb-1 md:mb-1.5">Tempo</span>
-                <div className="flex items-center gap-1 md:gap-1.5">
-                    <Clock className="h-2.5 w-2.5 md:h-3 md:w-3 text-primary/50" />
-                    <span className="font-black text-[0.6rem] md:text-xs text-white uppercase">{data.expirationTime}</span>
+
+              {/* Time Capsule */}
+              <div className="flex flex-col items-center justify-center bg-white/[0.06] py-1.5 px-1 md:p-3.5 rounded-lg md:rounded-2xl border border-white/10 hover:border-primary/30 hover:bg-white/[0.1] transition-all duration-300 shadow-sm">
+                <span className="text-[0.5rem] md:text-[0.6rem] font-bold text-zinc-400 uppercase tracking-widest mb-0.5 md:mb-1">Tempo</span>
+                <div className="flex items-center gap-1">
+                    <Clock className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 text-primary" />
+                    <span className="font-extrabold text-[0.65rem] md:text-xs text-white tracking-wide">{data.expirationTime}</span>
                 </div>
               </div>
-              <div className="flex flex-col items-center bg-white/[0.03] p-1.5 md:p-2.5 rounded-xl md:rounded-2xl border border-white/5 group-hover:bg-white/[0.06] transition-colors">
-                <span className="text-[0.4rem] md:text-[0.45rem] font-black text-white/20 uppercase tracking-widest mb-1 md:mb-1.5">Entrada</span>
-                <div className="flex items-center gap-1 md:gap-1.5">
-                    <Target className="h-2.5 w-2.5 md:h-3 md:w-3 text-primary/50" />
-                    <span className="font-black text-[0.65rem] md:text-xs text-white font-mono">{data.targetTime}</span>
+
+              {/* Entry Capsule */}
+              <div className="flex flex-col items-center justify-center bg-white/[0.06] py-1.5 px-1 md:p-3.5 rounded-lg md:rounded-2xl border border-white/10 hover:border-primary/30 hover:bg-white/[0.1] transition-all duration-300 shadow-sm">
+                <span className="text-[0.5rem] md:text-[0.6rem] font-bold text-zinc-400 uppercase tracking-widest mb-0.5 md:mb-1">Entrada</span>
+                <div className="flex items-center gap-1">
+                    <Target className="h-2.5 w-2.5 md:h-3.5 md:w-3.5 text-primary" />
+                    <span className="font-extrabold text-[0.65rem] md:text-xs text-white font-mono tracking-wider">{data.targetTime}</span>
                 </div>
               </div>
           </div>
           
-          {/* Bloco de Ação Sugerida */}
+          {/* Action Box Panel */}
           <div
             className={cn(
-                "relative flex flex-col items-center justify-center p-3 md:p-6 rounded-[1.2rem] md:rounded-[2rem] border shadow-2xl transition-all duration-1000 overflow-hidden",
+                "relative flex flex-col items-center justify-center py-2 md:py-4.5 px-3.5 rounded-[0.8rem] md:rounded-[1.5rem] border shadow-xl transition-all duration-700 overflow-hidden",
                 isCall 
-                    ? "bg-green-500/10 border-green-500/20 text-green-500 shadow-green-500/5" 
-                    : "bg-red-500/10 border-red-500/20 text-red-500 shadow-red-500/5"
+                    ? "bg-gradient-to-b from-emerald-950/20 to-emerald-900/10 border-emerald-500/20 text-emerald-400 shadow-emerald-950/20" 
+                    : "bg-gradient-to-b from-rose-950/20 to-rose-900/10 border-rose-500/20 text-rose-400 shadow-rose-950/20"
             )}
           >
-            {/* Efeito de Brilho de Fundo */}
+            {/* Gloss Reflection overlay */}
+            <div className="absolute inset-x-0 top-0 h-[50%] bg-white/[0.02] rounded-t-[0.8rem] md:rounded-t-[1.5rem] pointer-events-none" />
+            
+            {/* Glowing spotlight inside */}
             <div className={cn(
-                "absolute inset-0 opacity-10",
-                isCall ? "bg-gradient-to-t from-green-500 to-transparent" : "bg-gradient-to-t from-red-500 to-transparent"
+                "absolute inset-0 opacity-15 blur-xl transition-opacity duration-1000",
+                isCall ? "bg-emerald-500" : "bg-rose-500"
             )} />
 
-            <span className="text-[0.45rem] md:text-[0.55rem] font-black uppercase tracking-[0.2em] md:tracking-[0.4em] mb-1 md:mb-2 opacity-50 relative z-10">Ação Confirmada</span>
-            <span className="text-xl md:text-3xl font-black uppercase tracking-tighter relative z-10 drop-shadow-[0_0_10px_rgba(0,0,0,0.5)]">
-              {data.signal}
-            </span>
+            <span className="text-[0.4rem] md:text-[0.55rem] font-black uppercase tracking-[0.3em] mb-0.5 md:mb-1 opacity-50 relative z-10">AÇÃO RECOMENDADA</span>
+            
+            <div className="relative z-10 flex items-center gap-1.5">
+              <span className={cn(
+                "text-lg md:text-3xl font-black uppercase tracking-tight",
+                isCall ? "drop-shadow-[0_0_15px_rgba(16,185,129,0.3)] text-emerald-400" : "drop-shadow-[0_0_15px_rgba(244,63,94,0.3)] text-rose-400"
+              )}>
+                {data.signal}
+              </span>
+            </div>
 
-            {/* Partículas Decorativas HUD */}
+            {/* Futuristic Corner Brackets HUD */}
             <div className="absolute top-2 left-2 w-1 h-1 border-t border-l border-current opacity-30" />
             <div className="absolute top-2 right-2 w-1 h-1 border-t border-r border-current opacity-30" />
             <div className="absolute bottom-2 left-2 w-1 h-1 border-b border-l border-current opacity-30" />
             <div className="absolute bottom-2 right-2 w-1 h-1 border-b border-r border-current opacity-30" />
           </div>
 
-          {/* Status Dinâmico */}
-          <div className="pt-1 md:pt-2 min-h-[35px] md:min-h-[45px] flex items-center justify-center">
+          {/* Dynamic Status Section with custom heights */}
+          <div className="pt-0.5 min-h-[35px] flex flex-col items-center justify-center relative z-10 space-y-2 md:space-y-3">
              {renderStatus()}
+             
+             {isFinished && (
+                 <div className="w-full px-0.5 pb-0.5 animate-in slide-in-from-bottom-4 duration-700 space-y-1">
+                   <Button 
+                     onClick={() => {
+                       playSignalSound('click');
+                       onReset();
+                     }} 
+                     className="w-full h-8 md:h-11 rounded-lg md:rounded-xl text-[0.6rem] md:text-xs font-black uppercase tracking-[0.15em] bg-rose-600 hover:bg-rose-500 text-white shadow-[0_0_20px_rgba(225,29,72,0.25)] hover:shadow-[0_0_30px_rgba(225,29,72,0.45)] transition-all duration-300"
+                   >
+                       <RefreshCw className="mr-1 h-3 w-3 animate-[spin_4s_linear_infinite]" />
+                       NOVA ANÁLISE
+                   </Button>
+                   <p className="text-[0.4rem] font-bold text-white/10 uppercase tracking-[0.25em]">ENGINE DE FLUXO ATIVA • V.2026</p>
+                 </div>
+             )}
           </div>
         </CardContent>
       </Card>
-
-      {/* Botão de Reset Otimizado */}
-      {isFinished && (
-          <div className="px-2 md:px-4 pb-2 animate-in slide-in-from-bottom-6 duration-1000">
-            <Button 
-              onClick={onReset} 
-              className="w-full h-12 md:h-16 rounded-[1rem] md:rounded-[1.5rem] text-xs md:text-sm font-black uppercase tracking-[0.1em] md:tracking-[0.2em] bg-primary text-primary-foreground hover:scale-[1.02] shadow-[0_15px_40px_rgba(255,0,0,0.2)] active:scale-95 transition-all duration-300 shine-effect"
-            >
-                <RefreshCw className="mr-2 md:mr-3 h-4 w-4 md:h-5 md:w-5" />
-                NOVA ANÁLISE
-            </Button>
-            <p className="mt-2 md:mt-4 text-[0.4rem] md:text-[0.5rem] font-bold text-white/5 uppercase tracking-[0.2em] md:tracking-[0.3em]">IA Process Engine V.2026</p>
-          </div>
-      )}
     </div>
   );
 }

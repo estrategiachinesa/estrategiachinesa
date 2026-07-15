@@ -110,7 +110,7 @@ export default function LegalPage() {
       </ul>
 
       <h3>4. Retenção e Exclusão de Dados</h3>
-      <p>Os dados são mantidos enquanto a conta estiver ativa. Solicitações de exclusão definitiva podem ser feitas via: <strong>estrategiachinesa@gmail.com</strong>.</p>
+      <p>Os dados são mantidos enquanto a conta estiver ativa. Em conformidade com a LGPD, disponibilizamos ferramentas de autoatendimento no painel do usuário (Painel de Privacidade), onde você pode baixar uma cópia de todos os seus dados pessoais (Direito de Portabilidade) ou solicitar a exclusão imediata e definitiva de sua conta e informações associadas (Direito ao Esquecimento). Solicitações também podem ser feitas via email: <strong>estrategiachinesa@gmail.com</strong>.</p>
       
       <h3>5. Segurança</h3>
       <p>Embora utilizemos práticas de segurança reconhecidas, nenhum sistema digital é totalmente imune a riscos. O usuário concorda com essa condição.</p>

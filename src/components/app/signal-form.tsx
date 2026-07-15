@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { getNextOpeningTime, isMarketOpenForAsset } from '@/lib/market-hours';
 import { EconomicIntelligence } from './economic-intelligence';
 import { OtcIntelligence } from './otc-intelligence';
+import { playSignalSound } from '@/lib/audio';
 
 type VipStatus = 'PENDING' | 'AWAITING_DEPOSIT' | 'DEPOSIT_PENDING' | 'APPROVED' | 'REJECTED' | 'PREMIUM';
 
@@ -147,10 +148,16 @@ export function SignalForm({
               <Label className="text-[0.6rem] font-black text-muted-foreground uppercase tracking-[0.2em] opacity-50">Ativo:</Label>
               <div className="flex items-center space-x-1.5 bg-black/40 px-2 py-0.5 rounded-full border border-white/5">
                 <Label htmlFor="otc-switch" className="text-[0.5rem] font-black text-muted-foreground uppercase">OTC</Label>
-                <Switch id="otc-switch" checked={showOTC} onCheckedChange={setShowOTC} disabled={isLoading} className="scale-[0.5] origin-right" />
+                <Switch id="otc-switch" checked={showOTC} onCheckedChange={(checked) => {
+                  playSignalSound('click');
+                  setShowOTC(checked);
+                }} disabled={isLoading} className="scale-[0.5] origin-right" />
               </div>
             </div>
-            <Select value={formData.asset} onValueChange={(value) => setFormData({ ...formData, asset: value as Asset })} disabled={isLoading}>
+            <Select value={formData.asset} onValueChange={(value) => {
+              playSignalSound('click');
+              setFormData({ ...formData, asset: value as Asset });
+            }} disabled={isLoading}>
               <SelectTrigger className="h-10 md:h-14 rounded-xl bg-white/5 border-white/10 hover-glow transition-all duration-300">
                 <SelectValue asChild>
                   <div className="flex items-center justify-center gap-3 w-full">
@@ -175,7 +182,10 @@ export function SignalForm({
           {/* EXPIRAÇÃO */}
           <div className="space-y-1">
             <Label className="text-[0.6rem] font-black text-muted-foreground uppercase tracking-[0.2em] opacity-50 block text-left ml-1">Tempo:</Label>
-            <Select value={formData.expirationTime} onValueChange={(value) => setFormData({ ...formData, expirationTime: value as ExpirationTime })} disabled={isLoading}>
+            <Select value={formData.expirationTime} onValueChange={(value) => {
+              playSignalSound('click');
+              setFormData({ ...formData, expirationTime: value as ExpirationTime });
+            }} disabled={isLoading}>
               <SelectTrigger className="h-10 md:h-14 rounded-xl bg-white/5 border-white/10 hover-glow transition-all duration-300">
                 <SelectValue asChild>
                   <div className="flex items-center justify-center w-full">
@@ -200,7 +210,10 @@ export function SignalForm({
                     "w-full uppercase tracking-tighter transition-all duration-300",
                     isOtcAsset ? "h-12 md:h-16" : "h-14 md:h-16"
                 )}
-                onClick={onSubmit}
+                onClick={() => {
+                  playSignalSound('analyze');
+                  onSubmit();
+                }}
                 disabled={buttonDisabled}
             >
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 md:h-5 md:w-5 animate-spin" /> : (!isMarketOpen && !showOTC) ? <Lock className="mr-2 h-4 w-4 md:h-5 md:w-5" /> : (hasReachedLimit && !isPremium) || waitingMessage ? <Timer className="mr-2 h-4 w-4 md:h-5 md:w-5" /> : <BarChart className="mr-2 h-4 w-4 md:h-5 md:w-5" />}
@@ -208,8 +221,9 @@ export function SignalForm({
             </RealismButton>
             {!isPremium && (
                 <Button variant="link" className="w-full h-auto text-purple-400 py-0.5 hover:text-purple-300 transition-colors" onClick={() => {
-                if (vipStatus) setVipModalOpen(true);
-                else setUpgradeModalOpen(true);
+                  playSignalSound('click');
+                  if (vipStatus) setVipModalOpen(true);
+                  else setUpgradeModalOpen(true);
                 }}>
                     <Crown className="h-3 w-3 mr-1 animate-pulse" />
                     <span className="text-[0.6rem] font-black uppercase tracking-[0.1em]">ACESSAR PREMIUM</span>
@@ -250,10 +264,10 @@ export function SignalForm({
             </div>
 
             <div className="grid grid-cols-2 gap-2 mt-auto">
-                <Button asChild variant="ghost" size="sm" className="h-9 md:h-10 text-[0.55rem] md:text-[0.6rem] font-black uppercase tracking-widest border border-white/5 bg-white/5 rounded-xl hover-glow">
+                <Button asChild variant="ghost" size="sm" className="h-9 md:h-10 text-[0.55rem] md:text-[0.6rem] font-black uppercase tracking-widest border border-white/5 bg-white/5 rounded-xl hover-glow" onClick={() => playSignalSound('click')}>
                     <a href={config?.iqOptionOpenUrl || '#'} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5"><ExternalLink className="h-3 w-3" /> IQ Option</a>
                 </Button>
-                <Button asChild variant="ghost" size="sm" className="h-9 md:h-10 text-[0.55rem] md:text-[0.6rem] font-black uppercase tracking-widest border border-white/5 bg-white/5 rounded-xl hover-glow">
+                <Button asChild variant="ghost" size="sm" className="h-9 md:h-10 text-[0.55rem] md:text-[0.6rem] font-black uppercase tracking-widest border border-white/5 bg-white/5 rounded-xl hover-glow" onClick={() => playSignalSound('click')}>
                     <a href={config?.exnovaOpenUrl || '#'} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5"><ExternalLink className="h-3.5 w-3.5" /> Exnova</a>
                 </Button>
             </div>

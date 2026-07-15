@@ -29,6 +29,9 @@ import { generateSignal as generateClientSideSignal } from '@/lib/signal-generat
 import { VipUpgradeModal } from '@/components/app/vip-upgrade-modal';
 import { AnalysisAnimation } from '@/components/app/analysis-animation';
 import TradingViewWidget from '@/components/app/tradingview-widget';
+import { SplineScene } from '@/components/ui/splite';
+import CelestialOrbHero from '@/components/ui/quantum-grid-hero';
+import { playSignalSound } from '@/lib/audio';
 
 export type Asset = 
   | 'EUR/USD' | 'EUR/USD (OTC)'
@@ -70,6 +73,7 @@ export default function AnalisadorPage() {
   const [accessState, setAccessState] = useState<AccessState>('checking');
   const [appState, setAppState] = useState<AppState>('idle');
   const [signalData, setSignalData] = useState<SignalData | null>(null);
+  const [lastStatus, setLastStatus] = useState<'pending' | 'active' | 'finished' | undefined>(undefined);
   const [showOTC, setShowOTC] = useState(false);
   const [isMarketOpen, setIsMarketOpen] = useState(true);
   const [signalUsage, setSignalUsage] = useState<SignalUsage>({ timestamps: [] });
@@ -237,6 +241,29 @@ export default function AnalisadorPage() {
     }
     return () => clearInterval(timer);
   }, [appState, signalData?.operationStatus]);
+
+  useEffect(() => {
+    if (appState !== 'result' || !signalData) {
+      setLastStatus(undefined);
+      return;
+    }
+    
+    const currentStatus = signalData.operationStatus;
+    if (lastStatus !== undefined && currentStatus !== lastStatus) {
+      if (currentStatus === 'active') {
+        playSignalSound('active');
+      } else if (currentStatus === 'finished') {
+        playSignalSound('finished');
+      }
+    }
+    setLastStatus(currentStatus);
+  }, [signalData?.operationStatus, appState, lastStatus]);
+
+  useEffect(() => {
+    if (isNewsWarningModalOpen) {
+      playSignalSound('warning');
+    }
+  }, [isNewsWarningModalOpen]);
 
  const proceedWithAnalysis = async () => {
     sessionStorage.setItem('hasSeenNewsWarning', 'true');
@@ -437,7 +464,10 @@ export default function AnalisadorPage() {
              <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleLogout}
+                onClick={() => {
+                  playSignalSound('click');
+                  handleLogout();
+                }}
                 className="text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 font-bold transition-colors"
               >
                 <LogOut className="h-4 w-4 mr-2" />
@@ -495,32 +525,73 @@ export default function AnalisadorPage() {
 
                      <div className="flex-grow relative flex flex-col min-w-0">
                         {isOtcAsset ? (
-                            <div className="w-full h-full flex items-center justify-center bg-card/40 backdrop-blur-xl border border-white/5 rounded-2xl shadow-2xl p-8 min-h-[600px]">
+                            <div className="w-full h-full flex items-center justify-center bg-card/40 backdrop-blur-xl border border-white/5 rounded-2xl shadow-2xl p-8 min-h-[600px] relative overflow-hidden">
+                                {/* Orbit effect (CelestialOrbHero) when analyzing, or SplineScene robot when idle/result */}
                                 {appState === 'loading' ? (
-                                    <AnalysisAnimation />
+                                    <CelestialOrbHero />
                                 ) : (
-                                    <div className="text-center max-w-sm">
-                                        <div className="bg-muted/10 p-6 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center border border-border/10">
-                                            <BarChart className="h-10 w-10 text-muted-foreground/50" />
-                                        </div>
-                                        <h3 className="text-xl font-bold text-foreground">Gráfico Indisponível (OTC)</h3>
-                                        <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                                            Os ativos de balcão (OTC) são exclusivos de cada corretora. Utilize a plataforma oficial para acompanhamento.
-                                        </p>
-                                        <div className="mt-8 grid grid-cols-2 gap-3">
-                                            <Button asChild variant="secondary" className="font-bold">
-                                                <a href={config?.iqOptionUrl || '#'} target="_blank" rel="noopener noreferrer">
-                                                    IQ Option
-                                                </a>
-                                            </Button>
-                                            <Button asChild variant="secondary" className="font-bold">
-                                                <a href={config?.exnovaUrl || '#'} target="_blank" rel="noopener noreferrer">
-                                                    Exnova
-                                                </a>
-                                            </Button>
-                                        </div>
+                                    <div className={cn(
+                                        "absolute inset-0 w-full h-full z-0 transition-all duration-1000 ease-in-out",
+                                        appState === 'result' && signalData ? (
+                                            signalData.signal.includes('CALL') 
+                                                ? "bg-green-500/5 shadow-[inset_0_0_80px_rgba(34,197,94,0.15)]" 
+                                                : "bg-red-500/5 shadow-[inset_0_0_80px_rgba(239,68,68,0.15)]"
+                                        ) : ""
+                                    )}>
+                                        <SplineScene 
+                                            scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
+                                            className={cn(
+                                                "w-full h-full transition-all duration-1000 ease-in-out",
+                                                appState === 'result' && signalData ? (
+                                                    signalData.signal.includes('CALL')
+                                                        ? "hue-rotate-[120deg] saturate-[1.8] brightness-[1.1] drop-shadow-[0_0_30px_rgba(34,197,94,0.35)]"
+                                                        : "hue-rotate-[-30deg] saturate-[2] brightness-[1.1] drop-shadow-[0_0_30px_rgba(239,68,68,0.35)]"
+                                                ) : ""
+                                            )}
+                                        />
                                     </div>
                                 )}
+
+                                <div className={cn(
+                                    "text-center max-w-sm relative z-10 flex flex-col items-center justify-center bg-black/60 p-6 rounded-3xl border backdrop-blur-md pointer-events-none select-none transition-all duration-1000",
+                                    appState === 'result' && signalData ? (
+                                        signalData.signal.includes('CALL')
+                                            ? "border-green-500/30 shadow-[0_0_30px_rgba(34,197,94,0.15)]"
+                                            : "border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.15)]"
+                                    ) : "border-white/10"
+                                )}>
+                                    <h3 className="text-xl md:text-2xl font-black text-foreground uppercase tracking-widest text-center leading-tight">
+                                        IA SCANNER:
+                                        <br />
+                                        <span className={cn(
+                                            "text-sm md:text-base uppercase tracking-normal block mt-1 font-bold transition-all duration-1000",
+                                            appState === 'result' && signalData ? (
+                                                signalData.signal.includes('CALL')
+                                                    ? "text-green-400 font-extrabold"
+                                                    : "text-red-400 font-extrabold"
+                                            ) : "text-primary"
+                                        )}>
+                                            {currentAsset.toUpperCase().trim()}
+                                        </span>
+                                    </h3>
+                                    {appState !== 'loading' && (
+                                        <p className="mt-3 text-xs text-muted-foreground/80 leading-relaxed max-w-[280px]">
+                                            Interaja com o robô inteligente ou utilize as plataformas para operar.
+                                        </p>
+                                    )}
+                                    <div className="mt-4 grid grid-cols-2 gap-2 pointer-events-auto">
+                                        <Button asChild variant="secondary" size="sm" className="h-8 font-bold text-xs bg-white/10 hover:bg-white/20 border-0 text-white rounded-lg px-3">
+                                            <a href={config?.iqOptionUrl || '#'} target="_blank" rel="noopener noreferrer">
+                                                IQ Option
+                                            </a>
+                                        </Button>
+                                        <Button asChild variant="secondary" size="sm" className="h-8 font-bold text-xs bg-white/10 hover:bg-white/20 border-0 text-white rounded-lg px-3">
+                                            <a href={config?.exnovaUrl || '#'} target="_blank" rel="noopener noreferrer">
+                                                Exnova
+                                             </a>
+                                        </Button>
+                                    </div>
+                                </div>
                             </div>
                         ) : (
                             <div className="flex flex-col h-full min-h-[600px] bg-card/40 backdrop-blur-xl border border-white/5 rounded-2xl shadow-2xl overflow-hidden transition-all duration-500">
