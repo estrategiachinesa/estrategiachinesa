@@ -6,15 +6,10 @@ const repo = process.env.GITHUB_REPOSITORY
   ? process.env.GITHUB_REPOSITORY.split('/')[1] 
   : 'estrategiachinesa';
 
-// Se o repositório for o de página de usuário (ex: chinesa.github.io), o site é servido na raiz (/).
-// Logo, o basePath deve ser vazio. Caso contrário (ex: projeto), usa o subdiretório do repositório.
-const isUserPage = repo.toLowerCase().endsWith('.github.io');
-const basePath = isGithubActions && !isUserPage ? `/${repo}` : '';
-
 const nextConfig: NextConfig = {
   output: 'export',
   trailingSlash: true,
-  basePath: basePath,
+  basePath: isGithubActions ? `/${repo}` : '',
   productionBrowserSourceMaps: false,
   images: {
     unoptimized: true,

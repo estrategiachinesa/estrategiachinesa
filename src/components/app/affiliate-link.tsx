@@ -24,7 +24,7 @@ const AffiliateLink = React.forwardRef<HTMLAnchorElement, AffiliateLinkProps>(
       router.push(href);
     };
 
-    return <a ref={ref} href={href.toString()} onClick={handleClick} {...props} />;
+    return <Link ref={ref} href={href} onClick={handleClick} {...props} />;
   }
 );
 
