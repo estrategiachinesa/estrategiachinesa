@@ -152,13 +152,13 @@ type PageConfigItem = {
 };
 
 const DEFAULT_PAGE_LIST: PageConfigItem[] = [
-    { id: 'analisador', label: 'ANALISADOR', path: '/analisador', enabled: true },
-    { id: 'catalogador', label: 'SINAIS', path: '/catalogador', enabled: true },
-    { id: 'sessaochinesa', label: 'SESSÃO CHINESA', path: '/sessaochinesa', enabled: true },
-    { id: 'vip', label: 'PÁGINA VIP', path: '/vip', enabled: true },
-    { id: 'descubra', label: 'VSL', path: '/descubra', enabled: true },
-    { id: 'register', label: 'REGISTRO', path: '/register', enabled: true },
-    { id: 'copy', label: 'COPY TRADE', path: '/copy', enabled: true },
+    { id: 'analisador', label: 'ANALISADOR', path: '/analisador/', enabled: true },
+    { id: 'catalogador', label: 'SINAIS', path: '/catalogador/', enabled: true },
+    { id: 'sessaochinesa', label: 'SESSÃO CHINESA', path: '/sessaochinesa/', enabled: true },
+    { id: 'vip', label: 'PÁGINA VIP', path: '/vip/', enabled: true },
+    { id: 'descubra', label: 'VSL', path: '/descubra/', enabled: true },
+    { id: 'register', label: 'REGISTRO', path: '/register/', enabled: true },
+    { id: 'copy', label: 'COPY TRADE', path: '/copy/', enabled: true },
 ];
 
 const IMAGE_DEFAULT_SCHEDULE: ScheduleEdit = {

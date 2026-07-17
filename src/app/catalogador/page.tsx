@@ -71,13 +71,14 @@ interface Signal {
 const AVAILABLE_ASSETS: Asset[] = ['EUR/USD', 'EUR/USD (OTC)', 'EUR/JPY', 'EUR/JPY (OTC)'];
 
 const PAGE_METADATA: Record<string, { label: string; path: string }> = {
-    analisador: { label: 'ANALISADOR', path: '/analisador' },
-    catalogador: { label: 'SINAIS', path: '/catalogador' },
-    sessaochinesa: { label: 'SESSÃO CHINESA', path: '/sessaochinesa' },
-    vip: { label: 'PÁGINA VIP', path: '/vip' },
-    descubra: { label: 'VSL', path: '/descubra' },
-    register: { label: 'REGISTRO', path: '/register' },
-    bb: { label: 'BROKER BREAKER', path: '/bb' },
+    analisador: { label: 'ANALISADOR', path: '/analisador/' },
+    catalogador: { label: 'SINAIS', path: '/catalogador/' },
+    sessaochinesa: { label: 'SESSÃO CHINESA', path: '/sessaochinesa/' },
+    vip: { label: 'PÁGINA VIP', path: '/vip/' },
+    descubra: { label: 'VSL', path: '/descubra/' },
+    register: { label: 'REGISTRO', path: '/register/' },
+    bb: { label: 'BROKER BREAKER', path: '/bb/' },
+    copy: { label: 'COPY TRADE', path: '/copy/' },
 };
 
 const EXCLUDED_NAV_IDS = ['register', 'vip', 'descubra'];

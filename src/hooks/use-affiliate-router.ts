@@ -16,14 +16,35 @@ export function useAffiliateRouter() {
   const isExternal = (url: string) => /^(https|http|www)/.test(url);
 
   const generateHref = useCallback((url: string) => {
-    if (!affiliateId || isExternal(url)) {
+    if (isExternal(url)) {
       return url;
     }
 
-    const hasParams = url.includes('?');
-    const separator = hasParams ? '&' : '?';
+    // Split path and query parameters / hash
+    const [pathPart, queryPart] = url.split('?');
+    const [cleanPath, hashPart] = pathPart.split('#');
+
+    let normalizedPath = cleanPath;
+    if (normalizedPath.startsWith('/') && !normalizedPath.endsWith('/') && !normalizedPath.includes('.')) {
+      normalizedPath = `${normalizedPath}/`;
+    }
+
+    let finalUrl = normalizedPath;
+    if (hashPart) {
+      finalUrl = `${finalUrl}#${hashPart}`;
+    }
+
+    if (!affiliateId) {
+      if (queryPart) {
+        finalUrl = `${finalUrl}?${queryPart}`;
+      }
+      return finalUrl;
+    }
+
+    const separator = queryPart ? '&' : '?';
+    const queryAppend = queryPart ? `?${queryPart}${separator}aff=${affiliateId}` : `?aff=${affiliateId}`;
     
-    return `${url}${separator}aff=${affiliateId}`;
+    return `${normalizedPath}${queryAppend}${hashPart ? `#${hashPart}` : ''}`;
   }, [affiliateId]);
 
   const push = useCallback(
