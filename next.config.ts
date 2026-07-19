@@ -7,7 +7,7 @@ const repo = process.env.GITHUB_REPOSITORY
   : 'estrategiachinesa';
 
 const nextConfig: NextConfig = {
-  output: 'export',
+  ...(isGithubActions ? { output: 'export' as const } : {}),
   trailingSlash: true,
   basePath: isGithubActions ? `/${repo}` : '',
   productionBrowserSourceMaps: false,
