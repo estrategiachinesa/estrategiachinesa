@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useFirebase, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, doc, deleteDoc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc, setDoc, serverTimestamp, getDoc, query, where, getDocs } from 'firebase/firestore';
 import { 
   Loader2, 
   LogOut,
@@ -224,6 +224,11 @@ export default function AdminDashboard() {
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // User ID Details & Balance Modal
+  const [selectedUserDetail, setSelectedUserDetail] = useState<any | null>(null);
+  const [userBalanceInput, setUserBalanceInput] = useState<string>('');
+  const [isUpdatingBalance, setIsUpdatingBalance] = useState(false);
+
   const [isConfigSaving, setIsConfigSaving] = useState(false);
   const [regSecret, setRegSecret] = useState('');
   const [supportLink, setSupportLink] = useState('');
@@ -312,6 +317,56 @@ export default function AdminDashboard() {
       return collection(firestore, 'copyRequests');
   }, [firestore, isAdmin]);
   const { data: copyRequests, isLoading: isCopyRequestsLoading } = useCollection(copyRequestsQuery);
+
+  const handleSaveUserBalance = async () => {
+    if (!firestore || !selectedUserDetail) return;
+    setIsUpdatingBalance(true);
+    try {
+        const numericBalance = parseFloat(userBalanceInput) || 0;
+        
+        // Save to users collection if they have a real profile
+        if (!selectedUserDetail.isGhost) {
+            await setDoc(doc(firestore, 'users', selectedUserDetail.id), { 
+                balance: numericBalance,
+                updatedAt: serverTimestamp() 
+            }, { merge: true });
+        }
+        
+        // Save to vipRequests collection
+        await setDoc(doc(firestore, 'vipRequests', selectedUserDetail.id), { 
+            balance: numericBalance,
+            updatedAt: serverTimestamp() 
+        }, { merge: true });
+
+        // Check if they have an active copyRequest by matching brokerId
+        if (selectedUserDetail.brokerId && selectedUserDetail.brokerId !== '---') {
+            const q = query(collection(firestore, 'copyRequests'), where('brokerId', '==', selectedUserDetail.brokerId));
+            const snap = await getDocs(q);
+            if (!snap.empty) {
+                await Promise.all(snap.docs.map(d => 
+                    setDoc(doc(firestore, 'copyRequests', d.id), {
+                        balance: numericBalance,
+                        hasBalance: numericBalance > 0,
+                        updatedAt: serverTimestamp()
+                    }, { merge: true })
+                ));
+            }
+        }
+
+        toast({ 
+            title: 'Saldo Atualizado!', 
+            description: `Novo saldo para ID ${selectedUserDetail.brokerId}: ${formatCurrency(numericBalance)}` 
+        });
+        
+        // Update local state of selectedUserDetail so UI updates immediately
+        setSelectedUserDetail((prev: any) => prev ? { ...prev, balance: numericBalance } : null);
+    } catch (e) {
+        console.error(e);
+        toast({ variant: 'destructive', title: 'Erro ao salvar saldo' });
+    } finally {
+        setIsUpdatingBalance(false);
+    }
+  };
 
   const handleAuthorizeId = async () => {
     if (!firestore || !newAuthId) return;
@@ -983,7 +1038,8 @@ export default function AdminDashboard() {
         isDepositPending: vipStatus === 'DEPOSIT_PENDING',
         isAwaitingDeposit: vipStatus === 'AWAITING_DEPOSIT',
         isRejected: vipStatus === 'REJECTED', isNew, daysSince: diffDays, isGhost: !u,
-        userOrigin: u?.userOrigin || 'ANALYZER'
+        userOrigin: u?.userOrigin || 'ANALYZER',
+        balance: u?.balance ?? (r as any)?.balance ?? 0
       };
     })
     .filter(u => {
@@ -1919,7 +1975,15 @@ export default function AdminDashboard() {
                     </div>
                   </TableCell>
                   <TableCell className="text-[0.7rem] font-mono opacity-80">{formatDate(u.lastActivity)}</TableCell>
-                  <TableCell className="text-xs font-mono text-primary font-bold">{u.brokerId}</TableCell>
+                  <TableCell 
+                    className="text-xs font-mono text-primary font-bold cursor-pointer hover:underline hover:text-primary/80 transition-colors"
+                    onClick={() => {
+                      setSelectedUserDetail(u);
+                      setUserBalanceInput(u.balance?.toString() || '0');
+                    }}
+                  >
+                    {u.brokerId}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-0.5">
                         {[1, 2, 3, 4, 5].map((star) => (
@@ -2048,7 +2112,7 @@ export default function AdminDashboard() {
       <AlertDialog open={!!deleteUserId} onOpenChange={(open) => !open && setDeleteUserId(null)}>
         <AlertDialogContent className="bg-[#0d0d0d] border-white/10">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-red-500 font-black uppercase">Excluir Utilizador?</AlertDialogTitle>
+            <DialogTitle className="text-red-500 font-black uppercase">Excluir Utilizador?</DialogTitle>
             <AlertDialogDescription className="text-sm">Esta ação é irreversível e apagará todos os dados de perfil e pedidos VIP deste membro.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -2059,6 +2123,77 @@ export default function AdminDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!selectedUserDetail} onOpenChange={(open) => !open && setSelectedUserDetail(null)}>
+        <DialogContent className="bg-[#0d0d0d] border-white/10 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-primary font-black uppercase flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-primary" /> Detalhes da Conta & Saldo
+            </DialogTitle>
+            <DialogDescription className="text-xs text-zinc-400">
+              Visualize e atualize o saldo real do usuário no banco de dados.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedUserDetail && (
+            <div className="space-y-4 pt-4">
+              <div className="space-y-2 text-left">
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-zinc-500 block uppercase font-bold text-[0.6rem]">ID Corretora</span>
+                    <span className="font-mono font-bold text-white text-sm bg-white/5 px-2 py-1 rounded block mt-1">{selectedUserDetail.brokerId}</span>
+                  </div>
+                  <div>
+                    <span className="text-zinc-500 block uppercase font-bold text-[0.6rem]">Status Plano</span>
+                    <span className="font-bold text-white text-sm bg-white/5 px-2 py-1 rounded block mt-1 uppercase">{selectedUserDetail.subscriptionStatus}</span>
+                  </div>
+                </div>
+
+                <div className="text-xs mt-2">
+                  <span className="text-zinc-500 block uppercase font-bold text-[0.6rem]">E-mail do Membro</span>
+                  <span className="font-semibold text-zinc-300 block bg-white/5 px-2 py-1 rounded mt-1 truncate">{selectedUserDetail.email}</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-[0.65rem] text-zinc-500 mt-2">
+                  <div>
+                    <span className="block font-bold">Cadastro:</span>
+                    <span>{formatDate(selectedUserDetail.createdAt)}</span>
+                  </div>
+                  <div>
+                    <span className="block font-bold">Última Atividade:</span>
+                    <span>{formatDate(selectedUserDetail.lastActivity)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1.5 border-t border-white/10 pt-4">
+                <Label className="text-[0.65rem] font-bold uppercase text-primary tracking-wider">Saldo da Conta (R$)</Label>
+                <div className="flex gap-2">
+                  <Input 
+                    type="number" 
+                    step="0.01"
+                    value={userBalanceInput} 
+                    onChange={(e) => setUserBalanceInput(e.target.value)} 
+                    placeholder="0.00" 
+                    className="bg-white/5 border-white/10 h-10 font-mono text-white text-sm" 
+                  />
+                  <Button 
+                    onClick={handleSaveUserBalance} 
+                    disabled={isUpdatingBalance} 
+                    className="bg-primary text-black font-bold px-4 h-10 shrink-0 hover:bg-primary/90"
+                  >
+                    {isUpdatingBalance ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4 mr-1.5" />}
+                    SALVAR
+                  </Button>
+                </div>
+                <p className="text-[0.55rem] text-zinc-500 uppercase">
+                  * Este saldo será armazenado de forma persistente no Firestore e vinculado ao ID do usuário.
+                </p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
